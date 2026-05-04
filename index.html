@@ -115,10 +115,25 @@ ul.cl li::before{content:"—";position:absolute;left:0;color:var(--border);font
   .wg{grid-template-columns:repeat(4,1fr)}.fld{grid-template-columns:1fr;gap:2px}.fl{padding-top:0}
   .ek{display:none}.pt{font-size:26px}
 }
+/* GLOSSARY TOOLTIPS */
+.gterm{border-bottom:1px dotted var(--accent2);cursor:pointer;color:inherit;transition:color .15s}
+.gterm:hover{color:var(--accent2)}
+.gtooltip{position:fixed;z-index:500;background:var(--ink);color:#f6f3ee;border-radius:8px;padding:14px 16px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .15s;font-family:"Source Serif 4",serif;font-size:13.5px;line-height:1.6}
+.gtooltip.visible{opacity:1}
+.gtooltip-term{font-family:"Playfair Display",serif;font-size:14px;font-weight:600;color:#f6f3ee;margin-bottom:4px}
+.gtooltip-cat{font-family:"JetBrains Mono",monospace;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(246,243,238,.35);margin-bottom:8px}
+.gtooltip-def{font-size:12.5px;color:rgba(246,243,238,.75);line-height:1.55}
+.gtooltip-hint{font-size:11px;color:rgba(246,243,238,.3);margin-top:8px;font-style:italic}
 </style>
 </head>
 <body>
 <div class="overlay" id="ov" onclick="closeSidebar()"></div>
+<div class="gtooltip" id="gtooltip">
+  <div class="gtooltip-term" id="gtt-term"></div>
+  <div class="gtooltip-cat" id="gtt-cat"></div>
+  <div class="gtooltip-def" id="gtt-def"></div>
+  <div class="gtooltip-hint">Tap glossary for full entry</div>
+</div>
 <div class="shell">
 <nav class="sidebar" id="sb">
   <div class="brand"><div class="brand-name">Vitality</div><div class="brand-sub">The Human Performance Index<br>Evidence-Based Longevity</div></div>
@@ -198,10 +213,10 @@ function ss(boxes){return`<div class="ss">${boxes.map(b=>`<div class="sb"><div c
 function render(id) {
   const el = document.getElementById('ct');
   const fns = {ov,pr,mi,iin,is,au,mt,ho,na,sl,hr,mb,tr,bm,su,co,gl,src};
-  // map short ids
   const map = {in:'iin',src:'src'};
   const fn = fns[map[id]||id];
   el.innerHTML = fn ? fn() : '<p style="color:var(--text-muted);padding:40px 0">Section coming soon.</p>';
+  setTimeout(()=>linkTerms(el),30);
 }
 
 function ov(){return ph('Vitality — The Human Performance Index','The science of living<br><em>better, longer.</em>','A structured reference for understanding the biological systems that govern health, performance, and longevity — built on peer-reviewed research, organized for anyone willing to take it seriously.')+
@@ -442,6 +457,7 @@ const terms=[
   {t:'Akkermansia muciniphila',c:'Microbiome',d:'A gut bacterium that lines and protects the intestinal barrier. Higher levels are associated with better insulin sensitivity, lower inflammation, and a stronger gut lining. Declines with age and ultra-processed food consumption.',w:'Declining Akkermansia is linked to metabolic dysfunction and increased gut permeability — a direct driver of inflammaging.'},
   {t:'ALMI',c:'Biomarker',d:'Appendicular Lean Mass Index — skeletal muscle mass in arms and legs relative to height, from a DEXA scan. The most clinically meaningful body composition metric — a stronger predictor of mortality and disability than BMI.',w:'Low ALMI predicts functional decline and mortality independently of weight or BMI.'},
   {t:'AMPK',c:'Cellular Biology',d:'AMP-activated protein kinase — the cell\'s primary energy sensor. Activates when energy is low (fasting, exercise), triggering fat burning, mitochondrial biogenesis, and autophagy. AMPK and mTOR operate as opposing switches.',w:'AMPK is the upstream activator of the cleanup and repair state. Exercise, fasting, and berberine all work partly through AMPK.'},
+  {t:'ATP (Adenosine Triphosphate)',c:'Cellular Biology',d:'The universal energy currency of every living cell. ATP stores chemical energy in its phosphate bonds and releases it to power virtually every biological process — muscle contraction, protein synthesis, DNA repair, ion transport, and cellular signaling. Produced primarily by mitochondria through the electron transport chain using glucose, fatty acids, and ketones as fuel. The phosphocreatine system rapidly regenerates ATP during high-intensity effort; creatine supplementation directly supports this system.',w:'ATP is why mitochondrial health is foundational to everything. Energy availability at the cellular level governs performance, recovery, cognition, and aging — all of which depend on the rate and efficiency of ATP production.'},
   {t:'ApoB',c:'Biomarker',d:'Apolipoprotein B — present on every atherogenic particle in the blood. More accurate than LDL-C because it counts all particle types, not just cholesterol content. Target: ~60–65 mg/dL.',w:'ApoB is the single best lipid marker for predicting cardiovascular disease risk.'},
   {t:'Apigenin',c:'Supplement',d:'A natural flavonoid (chamomile, parsley, celery) with two roles: (1) CD38 inhibition — slows the enzyme that degrades NAD+, complementing NMN/NR; (2) natural GABA-A receptor ligand supporting sleep onset without dependence or tolerance. Dose: 50mg pre-bed.',w:'Pairs with NMN/NR to address the "leaky bucket" problem — supplementing NAD+ while CD38 degrades it faster than it is replaced.'},
   {t:'Autophagy',c:'Cellular Biology',d:'The body\'s cellular cleanup system — cells identify, sequester, and recycle damaged proteins, organelles, and debris. Triggered by fasting, exercise, and caloric restriction. Suppressed by mTOR. Goal: restore healthy basal flux, not chronic maximal activation. Important nuance: tumor-suppressive early but established tumors can exploit it metabolically.',w:'Declining autophagy is a hallmark of aging. Cycling between cleanup and rebuild phases is more effective and safer than continuous maximal autophagy activation.'},
@@ -564,6 +580,102 @@ ch('Supplementation — Fisetin','Yousefzadeh et al.')+
 en(`<div class="etl">Fisetin is a senotherapeutic that extends health and lifespan</div>`+eb(`<p>The landmark EBioMedicine study establishing fisetin as the most potent natural senolytic among 10 flavonoids tested, selectively eliminating ~70% of senescent cells while sparing healthy cells. The basis for fisetin's inclusion in the senolytic protocol.</p>`)+`<div class="flds"><div class="fld"><div class="fl">Journal</div><div class="fv">EBioMedicine / PMC, 2018</div></div><div class="fld"><div class="fl">Authors</div><div class="fv">Yousefzadeh MJ, Zhu Y, McGowan SJ, et al.</div></div><div class="fld"><div class="fl">Link</div><div class="fv"><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6197652/" target="_blank" style="color:var(--accent2)">pmc.ncbi.nlm.nih.gov → PMC EBioMedicine</a></div></div></div>`)+
 `<div class="note" style="margin-top:28px">All sources listed here are peer-reviewed and publicly accessible. Where access requires institutional login, the PubMed abstract remains available. DOIs are provided where possible. This index will be updated as new high-quality evidence emerges.</div>`;}
 
+// ── TOOLTIP SYSTEM ──
+const tooltip=document.getElementById('gtooltip');
+let tooltipTimeout=null;
+
+function showTooltip(e,termObj){
+  clearTimeout(tooltipTimeout);
+  document.getElementById('gtt-term').textContent=termObj.t;
+  document.getElementById('gtt-cat').textContent=termObj.c;
+  const shortDef=termObj.d.length>140?termObj.d.slice(0,137)+'...':termObj.d;
+  document.getElementById('gtt-def').textContent=shortDef;
+  const x=e.clientX,y=e.clientY;
+  const tw=Math.min(300,window.innerWidth-24);
+  tooltip.style.maxWidth=tw+'px';
+  let left=x+12,top=y+16;
+  if(left+tw>window.innerWidth-12)left=x-tw-12;
+  if(top+220>window.innerHeight-12)top=y-220;
+  tooltip.style.left=Math.max(8,left)+'px';
+  tooltip.style.top=Math.max(8,top)+'px';
+  tooltip.classList.add('visible');
+}
+
+function hideTooltip(){
+  tooltip.classList.remove('visible');
+}
+
+function linkTerms(container){
+  // Build alias map: alternate text forms → term index
+  // This handles parenthetical terms (ATP vs "ATP (Adenosine Triphosphate)")
+  // and special character variants
+  const aliasMap={};
+  terms.forEach((termObj,idx)=>{
+    const t=termObj.t;
+    // Always register the full term
+    aliasMap[t.toLowerCase()]=idx;
+    // If term has parenthetical, register the base form too
+    if(t.includes('(')){
+      const base=t.split('(')[0].trim();
+      if(base.length>=3&&!aliasMap[base.toLowerCase()])
+        aliasMap[base.toLowerCase()]=idx;
+    }
+    // Register common abbreviations in parens e.g. "HRV" from "HRV (Heart Rate Variability)"
+    const parenMatch=t.match(/\(([^)]+)\)/);
+    if(parenMatch){
+      const abbr=parenMatch[1];
+      // Only use short abbreviations (≤5 chars) as aliases
+      if(abbr.length<=5&&!aliasMap[abbr.toLowerCase()])
+        aliasMap[abbr.toLowerCase()]=idx;
+    }
+  });
+
+  // Build sorted list of all alias keys by length descending
+  // so longer matches take priority
+  const sortedAliases=Object.keys(aliasMap).sort((a,b)=>b.length-a.length);
+
+  const textContainers=container.querySelectorAll('.eb p,.fv,ul.cl li,.tlb,.ccb');
+  textContainers.forEach(el=>{
+    const seen=new Set(); // track term indices already linked
+    let html=el.innerHTML;
+    sortedAliases.forEach(alias=>{
+      if(alias.length<3)return;
+      const idx=aliasMap[alias];
+      if(seen.has(idx))return;
+      // Escape special regex characters in the alias
+      const escaped=alias.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      // Word boundary aware match — handles terms ending in + or α
+      const re=new RegExp('(?<![\\w<"-])(' + escaped + ')(?![\\w>"-])', 'i');
+      if(re.test(html)){
+        seen.add(idx);
+        html=html.replace(re,`<span class="gterm" data-tidx="${idx}">$1</span>`);
+      }
+    });
+    el.innerHTML=html;
+  });
+
+  container.querySelectorAll('.gterm').forEach(el=>{
+    const idx=parseInt(el.dataset.tidx);
+    const termObj=terms[idx];
+    if(!termObj)return;
+    el.addEventListener('mouseenter',function(e){clearTimeout(tooltipTimeout);showTooltip(e,termObj);});
+    el.addEventListener('mousemove',function(e){
+      const tw=Math.min(300,window.innerWidth-24);
+      let left=e.clientX+12,top=e.clientY+16;
+      if(left+tw>window.innerWidth-12)left=e.clientX-tw-12;
+      if(top+220>window.innerHeight-12)top=e.clientY-220;
+      tooltip.style.left=Math.max(8,left)+'px';
+      tooltip.style.top=Math.max(8,top)+'px';
+    });
+    el.addEventListener('mouseleave',function(){tooltipTimeout=setTimeout(hideTooltip,200);});
+    el.addEventListener('click',function(e){
+      e.stopPropagation();
+      if(tooltip.classList.contains('visible')&&tooltip.dataset.active===String(idx)){hideTooltip();}
+      else{tooltip.dataset.active=idx;showTooltip(e,termObj);}
+    });
+  });
+}
+
 // ── INIT ──
 render('ov');
 document.addEventListener('click',function(e){
@@ -572,6 +684,7 @@ document.addEventListener('click',function(e){
     document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
     ni.classList.add('active');
   }
+  if(!e.target.closest('.gterm'))hideTooltip();
 });
 // Re-render glossary whenever glossary section is visible
 const obs=new MutationObserver(()=>{
